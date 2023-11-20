@@ -13,18 +13,28 @@ pacman -Syu  --noconfirm \
         mpv vlc putty qalculate-qt featherpad \
         libreoffice-still libreoffice-still-ru featherpad \
         qtcreator qbs qt5-websockets qt5-tools qt5-serialport qt5-doc qt5-examples \
-        remmina freerdp libvncserver \
+        remmina freerdp libvncserver webkit2gtk-4.1 \
         scrcpy xscreensaver network-manager-applet \
         blueman bluez-utils \
         doublecmd-qt5 libunrar p7zip \
-        wine winetricks \
+        wine winetricks lib32-vulkan-intel \
         qemu-desktop virt-viewer qemu-user-static-binfmt \
-        uboot-tools 
-
+        uboot-tools \
+        python-pyelftools python-cryptography \ # optee build
+        noto-fonts-cjk noto-fonts-emoji noto-fonts \
+        bc python3-setuptools swig inetutils \
+        rtkit \
+        gvfs-smb sshfs cups gnome-keyring \
+        squashfs-tools mtd-utils \
+        nss-mdns dosfstools 
+         
 aur_inst $u yay-bin
 aur_inst $u f3
 aur_inst $u f3-qt
 aur_inst $u pacman-cleanup-hook
 aur_inst $u libpamac-aur
 aur_inst $u pamac-aur
-usermod -aG audio,video,storage,uucp $u
+usermod -aG audio,video,storage,uucp,cups $u
+sed -E -i 's/(hosts\: mymachines) (resolve \[\!UNAVAIL\=return\] files myhostname dns)/\1 mdns_minimal [NOTFOUND=return] \2/g' /etc/nsswitch.conf
+systemctl enable avahi-daemon.service
+systemctl start avahi-daemon.service
