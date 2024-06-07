@@ -14,7 +14,7 @@ pacman -Syu  --noconfirm \
         libreoffice-still libreoffice-still-ru featherpad \
         qtcreator qbs qt5-websockets qt5-tools qt5-serialport qt5-doc qt5-examples \
         remmina freerdp libvncserver webkit2gtk-4.1 \
-        scrcpy xscreensaver network-manager-applet \
+        scrcpy xscreensaver network-manager-applet networkmanager-openvpn \
         blueman bluez-utils \
         doublecmd-qt5 libunrar p7zip \
         wine winetricks lib32-vulkan-intel \
