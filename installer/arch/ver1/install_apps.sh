@@ -3,7 +3,7 @@ u=user
 function aur_inst() { cd /home/$1;git clone -q https://aur.archlinux.org/$2.git;chmod -R 777 $2;pushd $2;su $1 -c 'makepkg -src';pacman -U *pkg.tar* --noconfirm;popd; rm -R /home/$1/$2; }; export -f aur_inst;
 
 pacman -Syu  --noconfirm \
-      	gdb cmake \
+		gdb cmake \
         mc bash-completion \
         firefox firefox-i18n-ru qbittorrent \
         samba \
@@ -20,9 +20,9 @@ pacman -Syu  --noconfirm \
         wine winetricks lib32-vulkan-intel \
         qemu-desktop virt-viewer qemu-user-static-binfmt \
         uboot-tools \
-        python-pyelftools python-cryptography \ # optee build
+        python-pyelftools python-cryptography \ 
         noto-fonts-cjk noto-fonts-emoji noto-fonts \
-        bc python3-setuptools swig inetutils \
+        bc swig inetutils \
         rtkit \
         gvfs-smb sshfs cups gnome-keyring \
         squashfs-tools mtd-utils \
