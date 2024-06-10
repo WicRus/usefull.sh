@@ -10,7 +10,7 @@ pacman -Syu  --noconfirm \
         wireguard-tools \
         ttf-dejavu ttf-liberation \
         gparted f2fs-tools gnome-disk-utility ntfs-3g \
-        mpv vlc putty qalculate-qt featherpad \
+        mpv vlc putty qalculate-qt featherpad pipewire-pulse \
         libreoffice-still libreoffice-still-ru featherpad \
         qtcreator qbs qt5-websockets qt5-tools qt5-serialport qt5-doc qt5-examples \
         remmina freerdp libvncserver webkit2gtk-4.1 \
