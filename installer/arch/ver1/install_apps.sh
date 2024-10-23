@@ -9,7 +9,7 @@ pacman -Syu  --noconfirm \
         samba \
         wireguard-tools \
         ttf-dejavu ttf-liberation \
-        gparted f2fs-tools gnome-disk-utility ntfs-3g \
+        gparted f2fs-tools gnome-disk-utility ntfs-3g dosfstools mtools \
         mpv vlc putty qalculate-qt featherpad pipewire-pulse \
         libreoffice-still libreoffice-still-ru featherpad \
         qtcreator qbs qt5-websockets qt5-tools qt5-serialport qt5-doc qt5-examples \
@@ -26,7 +26,7 @@ pacman -Syu  --noconfirm \
         rtkit \
         gvfs-smb sshfs cups gnome-keyring \
         squashfs-tools mtd-utils \
-        nss-mdns dosfstools 
+        nss-mdns 
          
 aur_inst $u yay-bin
 aur_inst $u f3
