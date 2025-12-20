@@ -13,7 +13,7 @@ SERVER_OUT_IP=$(ip a show $SERVER_OUT_IF | sed 's/.*inet \([^/]*\).*/\1/;t;d')
 
 
 function setup_os() {
-  local APPS="sudo openssh easy-rsa"
+  local APPS="sudo openssh easy-rsa openvpn"
   apt update && apt upgrade
   apt -y install $APPS
   apt autoremove && apt clean && rm -r /var/lib/apt/lists/*
@@ -105,7 +105,7 @@ EOF
 function gen_client {
   local NAME=$1
   pushd ${EASYRSA}/
-  echo ./easyrsa build-client-full $NAME nopass
+  ./easyrsa build-client-full $NAME nopass
   popd
   local OPENVPN_CLIENT_KEY=$(cat ${EASYRSA}/pki/private/${NAME}.key)
   local OPENVPN_CLIENT_CRT=$(cat ${EASYRSA}/pki/issued/${NAME}.crt | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p')
@@ -172,10 +172,10 @@ function fwall_set {
   # nft add rule  inet $T $I ip saddr @ssh_blacklist counter drop
   # nft add chain inet $T $F '{ type filter hook forward priority 50 ; policy drop ; }'
 
-  nft add table inet $N
-  nft add chain inet $N $PRR '{ type nat hook prerouting priority -100 ; }'
-  nft add chain inet $N $POR '{ type nat hook prerouting priority  100 ; }'
-  nft add rule  inet $N $POR oifname "$SERVER_OUT_IF" masquerade
+  nft add table ip $N
+  nft add chain ip $N $PRR { type nat hook $PRR priority -100 \; }
+  nft add chain ip $N $POR { type nat hook $POR priority  100 \; }
+  nft add rule     $N $POR oifname "$SERVER_OUT_IF" masquerade
   #  iptables -A FORWARD -i tun0 -o tun0 -j DROP
 
 cat <<EOF > /etc/nftables.conf
