@@ -76,10 +76,10 @@ function gen_server {
   cat <<EOF > $OPENVPN_SRV_CFG
 local ${SERVER_OUT_IP}
 port ${OPENVPN_SERVER_NEW_PORT}
-OPENVPN_proto ${OPENVPN_SERVER_PROTOCOL}
+proto ${OPENVPN_SERVER_PROTOCOL}
 dev tun
-cipher AES-256-GCM
-data-ciphers CHACHA20-POLY1305:AES-256-GCM
+cipher CHACHA20-POLY1305
+data-ciphers CHACHA20-POLY1305
 ca ${OPENVPN_P}/server/ca.crt
 cert ${OPENVPN_P}/server/${CN_NAME}.crt
 key ${OPENVPN_P}/server/${CN_NAME}.key
@@ -116,10 +116,10 @@ function gen_client {
   cat <<EOF > /root/${NAME}.ovpn
 client
 dev tun
-OPENVPN_proto ${OPENVPN_SERVER_PROTOCOL}
+proto ${OPENVPN_SERVER_PROTOCOL}
 remote ${SERVER_OUT_IP} ${OPENVPN_SERVER_PORT}
-cipher AES-256-GCM
-data-ciphers CHACHA20-POLY1305:AES-256-GCM
+cipher CHACHA20-POLY1305
+data-ciphers CHACHA20-POLY1305
 key-direction 1
 resolv-retry infinite
 nobind
