@@ -12,8 +12,12 @@ SERVER_OUT_IF=$(ip r | awk '/default/ {print $5}')
 SERVER_OUT_IP=$(ip a show $SERVER_OUT_IF | sed 's/.*inet \([^/]*\).*/\1/;t;d')
 
 WG_P=/etc/wireguard
-WG_CONF=${WG_P}/wg0.conf
-WGA_CONF=${WG_P}/wga0.conf
+WG_IF_NAME=wg0
+WG_CONF=${WG_P}/${WG_IF_NAME}.conf
+
+WGA_P=/etc/amnezia/amneziawg
+WGA_IF_NAME=wga0
+WGA_CONF=${WGA_P}/${WGA_IF_NAME}.conf
 
 function setup_apps(){
   apt update && apt upgrade
@@ -45,7 +49,7 @@ sed -i "s/^UsePAM yes$/UsePAM no/" /etc/ssh/sshd_config
 
 }
 
-function setup_opevpn() {
+function setup_server_opevpn() {
   setup_apps easy-rsa openvpn
   make-cadir $EASYRSA
   cat << EOF >> ${EASYRSA}/vars
@@ -75,7 +79,7 @@ EOF
   systemctl enable --now openvpn@server.service
 }
 
-function openvpn_gen_server {
+function gen_server_openvpn {
   local OPENVPN_SERVER_NEW_PORT=$(shuf -i 1024-65535 -n 1)
   # TODO rework on RANMOD with check /proc/net/tcp
   # OPENVPN_SERVER_NEW_PORT=$(( ((RANDOM<<15)|RANDOM) % 49152 + 10000 ))
@@ -113,7 +117,7 @@ comp-lzo
 EOF
 }
 
-function openvpn_gen_client {
+function gen_client_openvpn {
   local NAME=$1
   pushd ${EASYRSA}/
   ./easyrsa build-client-full $NAME nopass
@@ -200,7 +204,7 @@ EOF
 systemctl enable --now nftables
 }
 
-function setup_wg() {
+function setup_server_wg() {
   setup_apps wireguard openresolv
 
   local WG_SRV_PRI_KEY=$(wg genkey)
@@ -217,10 +221,10 @@ PrivateKey = ${WG_SRV_PRI_KEY}
 
 EOF
 
-  systemctl enable --now wg-quick@wg0.service
+  systemctl enable --now wg-quick@${WG_IF_NAME}.service
 }
 
-function wg_gen_client {
+function gen_client_wg {
   local NAME=$1
   local WG_PSH_KEY=$(wg genpsk)
   local WG_CLNT_PRI_KEY=$(wg genkey)
@@ -231,8 +235,8 @@ function wg_gen_client {
   cat << EOF >> ${WG_CONF}
 # ${NAME}
 [Peer]
-Address = 10.200.200.2/24
 PublicKey = ${WG_CLNT_PUB_KEY}
+AllowedIPs = 10.200.200.2/32
 PresharedKey = ${WG_PSH_KEY}
 
 EOF
@@ -248,8 +252,100 @@ Endpoint = ${SERVER_OUT_IP}:${WG_SRV_PORT}
 PublicKey = ${WG_SRV_PUB_KEY}
 AllowedIPs = 0.0.0.0/0
 PresharedKey = ${WG_PSH_KEY}
-PersistentKeepalive = 21
+PersistentKeepalive = 69
 EOF
+
+awg syncconf ${WG_IF_NAME} <(awg-quick strip ${WG_IF_NAME})
+}
+
+function setup_server_awg() {
+  # setup_apps software-properties-common openresolv
+  # add-apt-repository -y ppa:amnezia/ppa
+  # setup_apps amneziawg
+  local WGA_SRV_PRI_KEY=$(wg genkey)
+
+  mkdir -p $WG_P
+
+  cat << EOF > ${WGA_CONF}
+[Interface]
+Address = 10.200.200.1/24
+#PostUp =   echo nft add masquerade
+#PostDown = echo nft del masquerade
+ListenPort = 22407
+PrivateKey = ${WGA_SRV_PRI_KEY}
+
+Jc = 4
+Jmin = 40
+Jmax = 70
+S1 = 0
+S2 = 0
+S3 = 0
+S4 = 0
+H1 = 1106457265
+H2 = 249455488
+H3 = 1209847463
+H4 = 1646644382
+# I1 =
+# I2 =
+# I3 =
+# I4 =
+# I5 =
+# MTU = 1280
+
+EOF
+
+  systemctl enable --now awg-quick@${WGA_IF_NAME}.service
+}
+
+function gen_client_awg {
+  local NAME=$1
+  local WGA_PSH_KEY=$(wg genpsk)
+  local WGA_CLNT_PRI_KEY=$(wg genkey)
+  local WGA_CLNT_PUB_KEY=$(echo $WGA_CLNT_PRI_KEY | wg pubkey)
+  local WGA_SRV_PUB_KEY=$(grep PrivateKey ${WGA_CONF} | sed 's/PrivateKey = //' | wg pubkey)
+  local WGA_SRV_PORT=$(grep ListenPort ${WGA_CONF} | sed 's/ListenPort = //')
+
+  cat << EOF >> ${WGA_CONF}
+# ${NAME}
+[Peer]
+PublicKey = ${WGA_CLNT_PUB_KEY}
+AllowedIPs = 10.200.200.2/32
+PresharedKey = ${WGA_PSH_KEY}
+
+EOF
+
+  cat << EOF > /root/awg_${NAME}.conf
+[Interface]
+DNS = 8.8.8.8
+Address = 10.200.200.2/32
+PrivateKey = ${WGA_CLNT_PRI_KEY}
+Jc = 4
+Jmin = 40
+Jmax = 70
+S1 = 0
+S2 = 0
+S3 = 0
+S4 = 0
+H1 = 1106457265
+H2 = 249455488
+H3 = 1209847463
+H4 = 1646644382
+# I1 =
+# I2 =
+# I3 =
+# I4 =
+# I5 =
+# MTU = 1280
+
+[Peer]
+Endpoint = ${SERVER_OUT_IP}:${WGA_SRV_PORT}
+PublicKey = ${WGA_SRV_PUB_KEY}
+AllowedIPs = 0.0.0.0/0
+PresharedKey = ${WGA_PSH_KEY}
+PersistentKeepalive = 69
+EOF
+
+awg syncconf ${WGA_IF_NAME} <(awg-quick strip ${WGA_IF_NAME})
 }
 
 # TODO: rework opvn / wg local net IPs
