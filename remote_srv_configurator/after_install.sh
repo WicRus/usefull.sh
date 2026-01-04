@@ -308,6 +308,10 @@ DNS = 8.8.8.8
 Address = ${WG_CLI_IP}/32
 PrivateKey = ${WG_CLNT_PRI_KEY}
 
+# uncoment for linux
+# PostUp = ip r add 138.124.67.108/32 via DEF_IP dev DEF_IF
+# PostDown = ip r del 138.124.67.108/32
+
 [Peer]
 Endpoint = ${SERVER_OUT_IP}:${WG_SRV_PORT}
 PublicKey = ${WG_SRV_PUB_KEY}
@@ -414,6 +418,10 @@ H4 = ${H4}
 # I4 =
 # I5 =
 # MTU = 1280
+
+# uncoment for linux
+# PostUp = ip r add 138.124.67.108/32 via DEF_IP dev DEF_IF
+# PostDown = ip r del 138.124.67.108/32
 
 [Peer]
 Endpoint = ${SERVER_OUT_IP}:${WGA_SRV_PORT}
