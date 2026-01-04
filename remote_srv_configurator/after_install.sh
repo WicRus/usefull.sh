@@ -48,7 +48,7 @@ function gen_new_ip(){
   local ADR=$(sed -n 's/Address = \(.*\)$/\1/p' ${CFG})
   # local SUB_NET=$(sed 's/.*\/\(.*\)$/\1/' <<< $ADR)
   local BASE_ADR=$(sed 's/^\(.*\).[0-9]*\/[0-9]*$/\1/' <<< $ADR)
-  local ADRS=$(sed -n 's/.*'$BASE_ADR'\([0-9]*\).*/\1/pg' ${CFG})
+  local ADRS=$(sed -n 's/.*'$BASE_ADR'\([0-9]*\)\/.*/\1/pg' ${CFG})
   local NEW_ADR=1
     while [[ " ${ADRS[*]} " =~ [[:space:]]${NEW_ADR}[[:space:]] ]]; do
     local NEW_ADR=$((NEW_ADR + 1))
