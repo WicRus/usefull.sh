@@ -59,7 +59,7 @@ function gen_new_ip(){
 
 function setup_apps(){
   apt update && apt upgrade
-  apt -y install "$@"
+  DEBIAN_FRONTEND=noninteractive apt -y install "$@"
   apt autoremove && apt clean && rm -r /var/lib/apt/lists/*
 }
 
@@ -221,6 +221,7 @@ function nft_open_udp_port() {
 function nft_inital_set {
 
   local OPENVPN_SERVER_PORT=$(grep port $OPENVPN_SRV_CFG | sed 's/port //')
+  # TODO rework defines
   local T=fw
   local N=nat
   local I=input
@@ -432,4 +433,46 @@ PersistentKeepalive = 69
 EOF
 
 awg syncconf ${WGA_IF_NAME} <(awg-quick strip ${WGA_IF_NAME})
+}
+
+function setup_server_dante_socks() {
+  local DANTE_CONF="/etc/danted.conf"
+  local DANTE_SRV_IP="${WGA_IF_NET%.*}.1"
+  local DANTE_PORT=1080
+
+  setup_apps dante-server
+  cat << EOF > ${DANTE_CONF}
+errorlog: syslog
+logoutput: syslog
+debug: 0
+user.notprivileged: socks
+
+internal: ${DANTE_SRV_IP} port = ${DANTE_PORT}
+external: ${SERVER_OUT_IF}
+
+clientmethod: none
+socksmethod: none
+
+client pass {
+  from: ${WGA_IF_NET} to: 0.0.0.0/0
+  log: error
+}
+
+socks pass {
+  from: 0.0.0.0/0 to: 0.0.0.0/0
+  command: bind connect udpassociate
+  log: error
+}
+
+socks pass {
+  from: 0.0.0.0/0 to: 0.0.0.0/0
+  command: bindreply udpreply
+  log: error
+}
+
+EOF
+
+nft add rule inet fw input ip saddr ${WGA_IF_NET} tcp dport ${DANTE_PORT} accept
+nft_save_rules
+systemctl enable --now danted.service
 }
