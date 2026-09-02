@@ -334,12 +334,19 @@ function setup_server_awg() {
   local JC=$(shuf -i 4-9 -n 1)
   local JMIN=$(shuf -i 10-55 -n 1)
   local JMAX=$(shuf -i $(($S1+10))-$(($S1+60)) -n 1)
-  local S1=$(shuf -i 10-55 -n 1)
-  local S2=$(shuf -i $S1-$(($S1+50)) -n 1)
-  local H1=$(shuf -i 1024-2147483647 -n 1)
-  local H2=$(shuf -i 1024-2147483647 -n 1)
-  local H3=$(shuf -i 1024-2147483647 -n 1)
-  local H4=$(shuf -i 1024-2147483647 -n 1)
+  local S1=$(shuf -i 10-99 -n 1)
+  local S2=$(shuf -i $(($S1+10))-$(($S1+99)) -n 1)
+  local S3=$(shuf -i $(($S2+10))-$(($S2+99)) -n 1)
+  local S4=$(shuf -i $(($S3+10))-$(($S3+99)) -n 1)
+  local H1=$(shuf -i 1024-$((4294967295/4)) -n 1)
+  local H2=$(shuf -i $(($H1+10))-$((4294967295/2)) -n 1)
+  local H3=$(shuf -i $(($H2+10))-$((4294967295*3/4)) -n 1)
+  local H4=$(shuf -i $(($H3+10))-$((4294967295)) -n 1)
+  # I2 temporal fix to default
+  # https://github.com/amnezia-vpn/amnezia-client/issues/2857#issuecomment-5216799723
+  local I1="<r $(shuf -i 2-16 -n 1)><t><rd $(shuf -i 2-16 -n 1)>"
+  local I2="<r 2><b 0x858000010001000000000669636c6f756403636f6d0000010001c00c000100010000105a00044d583737>"
+  local I3="<r $(shuf -i 2-16 -n 1)><t><rd $(shuf -i 2-16 -n 1)>"
   WGA_SRV_IP=$(sed 's/\([^.]*\).\([^.]*\).\([^.]*\).\([^/]*\)\/\([0-9]*\)$/\1.\2.\3.1\/\5/' <<< $WGA_IF_NET)
 
   mkdir -p $WG_P
@@ -355,16 +362,15 @@ Jmin = ${JMIN}
 Jmax = ${JMAX}
 S1 = ${S1}
 S2 = ${S2}
-H1 = ${H1}
-H2 = ${H2}
-H3 = ${H3}
-H4 = ${H4}
-# I1 =
-# I2 =
-# I3 =
-# I4 =
-# I5 =
-# MTU = 1280
+S3 = ${S3}
+S4 = ${S4}
+H1 = ${H1}-$(shuf -i $(($H1+10))-$(($H2-10)) -n 1)
+H2 = ${H2}-$(shuf -i $(($H2+10))-$(($H3-10)) -n 1)
+H3 = ${H3}-$(shuf -i $(($H3+10))-$(($H4-10)) -n 1)
+H4 = ${H4}-$(shuf -i $(($H4+10))-4294967295 -n 1)
+I1 = ${I1}
+I2 = ${I2}
+I3 = ${I3}
 
 EOF
 
@@ -381,15 +387,20 @@ function gen_client_awg {
   local WGA_SRV_PORT=$(grep ListenPort ${WGA_CONF} | sed 's/ListenPort = //')
   local WGA_CLI_IP=$(gen_new_ip ${WGA_CONF})
 
-  local JC=$(grep "Jc = " ${WGA_CONF} | sed 's/Jc = //')
-  local JMIN=$(grep "Jmin = " ${WGA_CONF} | sed 's/Jmin = //')
-  local JMAX=$(grep "Jmax = " ${WGA_CONF} | sed 's/Jmax = //')
-  local S1=$(grep "S1 = " ${WGA_CONF} | sed 's/S1 = //')
-  local S2=$(grep "S2 = " ${WGA_CONF} | sed 's/S2 = //')
-  local H1=$(grep "H1 = " ${WGA_CONF} | sed 's/H1 = //')
-  local H2=$(grep "H2 = " ${WGA_CONF} | sed 's/H2 = //')
-  local H3=$(grep "H3 = " ${WGA_CONF} | sed 's/H3 = //')
-  local H4=$(grep "H4 = " ${WGA_CONF} | sed 's/H4 = //')
+  local JC=$(grep "Jc = " ${WGA_CONF})
+  local JMIN=$(grep "Jmin = " ${WGA_CONF})
+  local JMAX=$(grep "Jmax = " ${WGA_CONF})
+  local S1=$(grep "S1 = " ${WGA_CONF})
+  local S2=$(grep "S2 = " ${WGA_CONF})
+  local S3=$(grep "S3 = " ${WGA_CONF})
+  local S4=$(grep "S4 = " ${WGA_CONF})
+  local H1=$(grep "H1 = " ${WGA_CONF})
+  local H2=$(grep "H2 = " ${WGA_CONF})
+  local H3=$(grep "H3 = " ${WGA_CONF})
+  local H4=$(grep "H4 = " ${WGA_CONF})
+  local I1=$(grep "I1 = " ${WGA_CONF})
+  local I2=$(grep "I2 = " ${WGA_CONF})
+  local I3=$(grep "I3 = " ${WGA_CONF})
 
   cat << EOF >> ${WGA_CONF}
 # ${NAME}
@@ -405,21 +416,20 @@ EOF
 DNS = 8.8.8.8
 Address = ${WGA_CLI_IP}/32
 PrivateKey = ${WGA_CLNT_PRI_KEY}
-Jc = ${JC}
-Jmin = ${JMIN}
-Jmax = ${JMAX}
-S1 = ${S1}
-S2 = ${S2}
-H1 = ${H1}
-H2 = ${H2}
-H3 = ${H3}
-H4 = ${H4}
-# I1 =
-# I2 =
-# I3 =
-# I4 =
-# I5 =
-# MTU = 1280
+${JC}
+${JMIN}
+${JMAX}
+${S1}
+${S2}
+${S3}
+${S4}
+${H1}
+${H2}
+${H3}
+${H4}
+${I1}
+${I2}
+${I3}
 
 # uncoment for linux
 # PostUp = ip r add 138.124.67.108/32 via DEF_IP dev DEF_IF
