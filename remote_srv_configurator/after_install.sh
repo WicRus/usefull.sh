@@ -319,7 +319,7 @@ Endpoint = ${SERVER_OUT_IP}:${WG_SRV_PORT}
 PublicKey = ${WG_SRV_PUB_KEY}
 AllowedIPs = 0.0.0.0/5, 8.0.0.0/7, 11.0.0.0/8, 12.0.0.0/6, 16.0.0.0/4, 32.0.0.0/3, 64.0.0.0/2, 128.0.0.0/3, 160.0.0.0/5, 168.0.0.0/6, 172.0.0.0/12, 172.32.0.0/11, 172.64.0.0/10, 172.128.0.0/9, 173.0.0.0/8, 174.0.0.0/7, 176.0.0.0/4, 192.0.0.0/9, 192.128.0.0/11, 192.160.0.0/13, 192.169.0.0/16, 192.170.0.0/15, 192.172.0.0/14, 192.176.0.0/12, 192.192.0.0/10, 193.0.0.0/8, 194.0.0.0/7, 196.0.0.0/6, 200.0.0.0/5, 208.0.0.0/4, 8.8.8.8/32
 PresharedKey = ${WG_PSH_KEY}
-PersistentKeepalive = 69
+PersistentKeepalive = 25
 EOF
 
 awg syncconf ${WG_IF_NAME} <(awg-quick strip ${WG_IF_NAME})
@@ -347,6 +347,15 @@ function setup_server_awg() {
   local I1="<r $(shuf -i 2-16 -n 1)><t><rd $(shuf -i 2-16 -n 1)>"
   local I2="<r 2><b 0x858000010001000000000669636c6f756403636f6d0000010001c00c000100010000105a00044d583737>"
   local I3="<r $(shuf -i 2-16 -n 1)><t><rd $(shuf -i 2-16 -n 1)>"
+  local HPK=$(wg genkey)
+  local RT="on"
+  # TODO rework for random gen, temporal hardcoded
+  local CPA="16-142"
+  local RKAT="100-120"
+  local RKT="3-7"
+  local RJAT="150-180"
+  local KT="5-15"
+  local MHA="15-20"
   WGA_SRV_IP=$(sed 's/\([^.]*\).\([^.]*\).\([^.]*\).\([^/]*\)\/\([0-9]*\)$/\1.\2.\3.1\/\5/' <<< $WGA_IF_NET)
 
   mkdir -p $WG_P
@@ -371,6 +380,14 @@ H4 = ${H4}-$(shuf -i $(($H4+10))-4294967295 -n 1)
 I1 = ${I1}
 I2 = ${I2}
 I3 = ${I3}
+HeaderProtectionKey = ${HPK}
+RandomTrailers = ${RT}
+ContentPaddingAddition = ${CPA}
+RekeyAfterTime = ${RKAT}
+RekeyTimeout = ${RKT}
+RejectAfterTime = ${RJAT}
+KeepaliveTimeout = ${KT}
+MaxHandshakeAttempts = ${MHA}
 
 EOF
 
@@ -401,6 +418,14 @@ function gen_client_awg {
   local I1=$(grep "I1 = " ${WGA_CONF})
   local I2=$(grep "I2 = " ${WGA_CONF})
   local I3=$(grep "I3 = " ${WGA_CONF})
+  local HPK=$(grep "HeaderProtectionKey = " ${WGA_CONF})
+  local RT=$(grep "RandomTrailers = " ${WGA_CONF})
+  local CPA=$(grep "ContentPaddingAddition = " ${WGA_CONF})
+  local RKAT=$(grep "RekeyAfterTime = " ${WGA_CONF})
+  local RKT=$(grep "RekeyTimeout = " ${WGA_CONF})
+  local RJAT=$(grep "RejectAfterTime = " ${WGA_CONF})
+  local KT=$(grep "KeepaliveTimeout = " ${WGA_CONF})
+  local MHA=$(grep "MaxHandshakeAttempts = " ${WGA_CONF})
 
   cat << EOF >> ${WGA_CONF}
 # ${NAME}
@@ -430,6 +455,14 @@ ${H4}
 ${I1}
 ${I2}
 ${I3}
+${HPK}
+${RT}
+${CPA}
+${RKAT}
+${RKT}
+${RJAT}
+${KT}
+${MHA}
 
 # uncoment for linux
 # PostUp = ip r add 138.124.67.108/32 via DEF_IP dev DEF_IF
@@ -440,7 +473,7 @@ Endpoint = ${SERVER_OUT_IP}:${WGA_SRV_PORT}
 PublicKey = ${WGA_SRV_PUB_KEY}
 AllowedIPs = 0.0.0.0/5, 8.0.0.0/7, 11.0.0.0/8, 12.0.0.0/6, 16.0.0.0/4, 32.0.0.0/3, 64.0.0.0/2, 128.0.0.0/3, 160.0.0.0/5, 168.0.0.0/6, 172.0.0.0/12, 172.32.0.0/11, 172.64.0.0/10, 172.128.0.0/9, 173.0.0.0/8, 174.0.0.0/7, 176.0.0.0/4, 192.0.0.0/9, 192.128.0.0/11, 192.160.0.0/13, 192.169.0.0/16, 192.170.0.0/15, 192.172.0.0/14, 192.176.0.0/12, 192.192.0.0/10, 193.0.0.0/8, 194.0.0.0/7, 196.0.0.0/6, 200.0.0.0/5, 208.0.0.0/4, 8.8.8.8/32
 PresharedKey = ${WGA_PSH_KEY}
-PersistentKeepalive = 69
+PersistentKeepalive = 25
 EOF
 
 awg syncconf ${WGA_IF_NAME} <(awg-quick strip ${WGA_IF_NAME})
